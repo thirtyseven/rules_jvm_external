@@ -12,6 +12,7 @@ def java_export(
         visibility = None,
         tags = [],
         testonly = None,
+        extra_artifacts = {},
         **kwargs):
     """Extends `java_library` to allow maven artifacts to be uploaded.
 
@@ -91,6 +92,7 @@ def java_export(
         testonly,
         lib_name,
         javadocopts,
+        extra_artifacts,
     )
 
 def maven_export(
@@ -103,7 +105,8 @@ def maven_export(
         tags,
         testonly,
         lib_name,
-        javadocopts):
+        javadocopts,
+        extra_artifacts = {}):
     """Helper rule to reuse this code for both java_export and kt_jvm_export.
 
     After a library has already been created (either a kt_jvm_library or
@@ -113,11 +116,11 @@ def maven_export(
     All arguments are the same as java_export with the addition of:
       lib_name: Name of the library that has been built.
       javadocopts: The options to be used for javadocs.
-
+      extra_artifacts: Dictionary: classifier -> artifact
     """
 
     deploy_env = deploy_env if deploy_env else []
-
+    
     # Merge the jars to create the maven project jar
     maven_project_jar(
         name = "%s-project" % name,
@@ -164,6 +167,9 @@ def maven_export(
             testonly = testonly,
         )
 
+    extra_artifacts_targets = extra_artifacts.values()
+    extra_classifiers = extra_artifacts.keys()
+
     pom_file(
         name = "%s-pom" % name,
         target = ":%s" % lib_name,
@@ -174,6 +180,8 @@ def maven_export(
     )
 
     maven_publish(
+        extra_artifacts = extra_artifacts_targets,
+        extra_classifiers = extra_classifiers,
         name = "%s.publish" % name,
         coordinates = maven_coordinates,
         pom = "%s-pom" % name,

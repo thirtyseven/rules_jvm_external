@@ -5,13 +5,15 @@ MavenPublishInfo = provider(
         "javadocs": "Javadoc jar file for documentation files",
         "artifact_jar": "Jar with the code and metadata for execution",
         "source_jar": "Jar with the source code for review",
+        "extra_classifiers": "Extra classifiers for Artifacts",
+        "extra_artifacts": "Extra artifacts such as tars, wars",
     },
 )
 
 _TEMPLATE = """#!/usr/bin/env bash
 
 echo "Uploading {coordinates} to {maven_repo}"
-{uploader} {maven_repo} {gpg_sign} {user} {password} {coordinates} {pom} {artifact_jar} {source_jar} {javadoc}
+{uploader} {maven_repo} {gpg_sign} {user} {password} {coordinates} {pom} {artifact_jar} {source_jar} {javadoc} {extra_classifiers} {extra_artifacts}
 """
 
 def _maven_publish_impl(ctx):
@@ -23,10 +25,11 @@ def _maven_publish_impl(ctx):
     password = ctx.var.get("maven_password", "''")
 
     # Expand maven coordinates for any variables to be replaced.
-    coordinates = ctx.expand_make_variables("coordinates", ctx.attr.coordinates, {})
+    coordinates = ctx.expand_make_variables("coordinates", ctx.attr.coordinates, ctx.var)
     artifacts_short_path = ctx.file.artifact_jar.short_path if ctx.file.artifact_jar else "''"
     source_short_path = ctx.file.source_jar.short_path if ctx.file.source_jar else "''"
     javadocs_short_path = ctx.file.javadocs.short_path if ctx.file.javadocs else "''"
+    extra_artifacts = [file.short_path for file in ctx.files.extra_artifacts]
 
     ctx.actions.write(
         output = executable,
@@ -38,14 +41,18 @@ def _maven_publish_impl(ctx):
             maven_repo = maven_repo,
             password = password,
             user = user,
-            pom = ctx.file.pom.short_path,
+            pom = ctx.file.pom.short_path if ctx.file.pom else "''",
             artifact_jar = artifacts_short_path,
             source_jar = source_short_path,
             javadoc = javadocs_short_path,
+            extra_classifiers = ",".join(ctx.attr.extra_classifiers),
+            extra_artifacts = ",".join(extra_artifacts),
         ),
     )
 
-    files = [ctx.file.pom]
+    files = [] + ctx.files.extra_artifacts
+    if ctx.file.pom:
+        files.append(ctx.file.pom)
     if ctx.file.artifact_jar:
         files.append(ctx.file.artifact_jar)
     if ctx.file.source_jar:
@@ -92,7 +99,6 @@ When signing with GPG, the current default key is used.
             mandatory = True,
         ),
         "pom": attr.label(
-            mandatory = True,
             allow_single_file = True,
         ),
         "javadocs": attr.label(
@@ -104,6 +110,8 @@ When signing with GPG, the current default key is used.
         "source_jar": attr.label(
             allow_single_file = True,
         ),
+        "extra_classifiers": attr.string_list(),
+        "extra_artifacts": attr.label_list(),
         "_uploader": attr.label(
             executable = True,
             cfg = "exec",
