@@ -3,7 +3,6 @@ stages:
   
 publish_job:
   stage: publish_artifact
-  image: plan/jfrog-cli
   variables:
     ARTIFACTORY_BASE_URL: https://artifactory.push.tools.roku.com
     ARTIFACT_NAME: rules_jvm_external
