@@ -9,7 +9,7 @@ publish_job:
     ARTIFACT_NAME: rules_jvm_external-$CI_COMMIT_SHA
   script:
     - curl -fL https://install-cli.jfrog.io | sh
-    - jf config add --url=$JFROG_PLATFORM_URL --user=$JFROG_PLATFORM_USER --password=$JFROG_PLATFORM_PASS
+    - jf config add --url=$ARTIFACTORY_BASE_URL --user=$ARTIFACTORY_USER --password=$ARTIFACTORY_PASSWORD
     # - tar "rules_jvm_external-$CI_COMMIT_SHA.zip" .
     - git archive --prefix $ARTIFACT_NAME  HEAD --format zip > "$ARTIFACT_NAME".zip
     - jf rt u "$ARTIFACT_NAME".zip "$REPO_NAME"/"$ARTIFACT_NAME".zip --recursive=false
