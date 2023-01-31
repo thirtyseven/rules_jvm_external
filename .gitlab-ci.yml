@@ -1,28 +1,15 @@
 stages:
-  - build_unittest
-  - static_code_review
   - publish_artifact
   
-  
-image: maven:3.6.1-jdk-8-alpine
-cache:
-  paths:
-    - .m2/repository
-    - target/
-variables:
-  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
-
 publish_job:
   stage: publish_artifact
   image: plan/jfrog-cli
   variables:
-    ARTIFACTORY_BASE_URL: https://artifactory.push.tools.roku.com/ui/repos/tree/General/genericrepo
-    REPO_NAME:  maven
+    ARTIFACTORY_BASE_URL: https://artifactory.push.tools.roku.com
     ARTIFACT_NAME: rules_jvm_external
+    REPO_NAME: genericrepo/ads/bazel/rules_jvm_external
   script:
+    - curl -fL https://install-cli.jfrog.io | sh
     - jf config add $JFROG_PLATFORM_SERVER_ID--url=$JFROG_PLATFORM_URL --user=$JFROG_PLATFORM_USER --password=$JFROG_PLATFORM_PASS
-    - jfrog rt c --url="$ARTIFACTORY_BASE_URL"/ --user="$ARTIFACTORY_USER" --password=$ARTIFACTORY_PASSWORD
-    - jfrog rt u "target/demo-SNAPSHOT.tar.gz" "$REPO_NAME"/"$ARTIFACT_NAME"_"$CI_PIPELINE_ID.tar.gz" --recursive=false
-  tags:
-    - my-docker
-  when: manual  
+    - tar -czvf "rules_jvm_external-$CI_COMMIT_SHA.zip" .
+    - jf rt u "rules_jvm_external-$CI_COMMIT_SHA.zip" "$REPO_NAME"/"rules_jvm_external-$CI_COMMIT_SHA.zip" --recursive=false
