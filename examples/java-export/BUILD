@@ -1,4 +1,4 @@
-load("@rules_jvm_external//:defs.bzl", "java_export", "maven_bom","maven_publish")
+load("@rules_jvm_external//:defs.bzl", "java_export", "maven_bom", "maven_publish")
 
 # To export the file, run:
 #
@@ -19,8 +19,8 @@ java_export(
 )
 
 maven_publish(
-    name="artifact-publish",
-    artifact_jar="//src/main/java/com/github/bazelbuild/rulesjvmexternal/example/export:tar",
+    name = "artifact-publish",
+    artifact = "//src/main/java/com/github/bazelbuild/rulesjvmexternal/example/export:tar",
     coordinates = "com.example:artifact-example:$(version)",
 )
 
