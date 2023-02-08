@@ -98,7 +98,8 @@ public class MavenPublisher {
         futures.add(upload(repo, credentials, coords, ".pom", pom, gpgSign));
       }
       if (binJar != null) {
-        futures.add(upload(repo, credentials, coords, ".jar", binJar, gpgSign));
+        String ext = binJar.toString().substring(binJar.toString().lastIndexOf(".")+1);
+        futures.add(upload(repo, credentials, coords, "." + ext, binJar, gpgSign));
       }
 
       if (srcJar != null) {
