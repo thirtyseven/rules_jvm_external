@@ -58,8 +58,8 @@ kt_register_toolchains()
 
 http_archive(
     name = "build_bazel_rules_nodejs",
-    sha256 = "493bb318d98bb7492cb30e534ad33df2fc5539b43d4dcc4e294a5cc60a126902",
-    urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/5.5.4/rules_nodejs-5.5.4.tar.gz"],
+    sha256 = "dcc55f810142b6cf46a44d0180a5a7fb923c04a5061e2e8d8eb05ccccc60864b",
+    urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/5.8.0/rules_nodejs-5.8.0.tar.gz"],
 )
 
 load("@build_bazel_rules_nodejs//:repositories.bzl", "build_bazel_rules_nodejs_dependencies")
@@ -111,7 +111,7 @@ load("//:specs.bzl", "maven")
 
 maven_install(
     artifacts = [
-        "com.google.guava:guava:27.0-jre",
+        "com.google.guava:guava:31.1-jre",
         "org.hamcrest:hamcrest-core:2.1",
     ],
     maven_install_json = "@rules_jvm_external//:maven_install.json",
@@ -236,6 +236,23 @@ maven_install(
         "org.junit:junit-bom:5.3.1",
         # https://github.com/bazelbuild/rules_jvm_external/issues/686
         "io.netty:netty-tcnative-boringssl-static:2.0.51.Final",
+        # https://github.com/bazelbuild/rules_jvm_external/issues/852
+        maven.artifact(
+            artifact = "jaxb-ri",
+            exclusions = [
+                "com.sun.xml.bind:jaxb-samples",
+                "com.sun.xml.bind:jaxb-release-documentation",
+            ],
+            group = "com.sun.xml.bind",
+            version = "2.3.6",
+        ),
+        # https://github.com/bazelbuild/rules_jvm_external/issues/865
+        maven.artifact(
+            artifact = "google-api-services-compute",
+            classifier = "javadoc",
+            group = "com.google.apis",
+            version = "v1-rev235-1.25.0",
+        ),
     ],
     generate_compat_repositories = True,
     maven_install_json = "//tests/custom_maven_install:regression_testing_install.json",
@@ -246,6 +263,16 @@ maven_install(
         "https://repo1.maven.org/maven2",
         "https://maven.google.com",
         "https://packages.confluent.io/maven/",
+    ],
+)
+
+# Grab com.google.ar.sceneform:rendering because we overrode it above
+http_file(
+    name = "com.google.ar.sceneform_rendering",
+    downloaded_file_path = "rendering-1.10.0.aar",
+    sha256 = "d2f6cd1d54eee0d5557518d1edcf77a3ba37494ae94f9bb862e570ee426a3431",
+    urls = [
+        "https://dl.google.com/android/maven2/com/google/ar/sceneform/rendering/1.10.0/rendering-1.10.0.aar",
     ],
 )
 
@@ -317,6 +344,23 @@ maven_install(
     ],
     strict_visibility = True,
 )
+
+maven_install(
+    name = "strict_visibility_with_compat_testing",
+    artifacts = [
+        # Must not be in any other maven_install where generate_compat_repositories = True
+        "com.google.http-client:google-http-client-gson:1.42.3",
+    ],
+    repositories = [
+        "https://repo1.maven.org/maven2",
+    ],
+    strict_visibility = True,
+    generate_compat_repositories = True,
+)
+
+load("@strict_visibility_with_compat_testing//:compat.bzl", "compat_repositories")
+
+compat_repositories()
 
 maven_install(
     name = "maven_install_in_custom_location",
@@ -542,6 +586,23 @@ maven_install(
     ],
 )
 
+maven_install(
+    name = "v1_lock_file_format",
+    artifacts = [
+        # Coordinates that are in no other `maven_install`
+        "org.seleniumhq.selenium:selenium-remote-driver:4.8.0",
+    ],
+    generate_compat_repositories = True,
+    maven_install_json = "//tests/custom_maven_install:v1_lock_file_format_install.json",
+    repositories = [
+        "https://repo1.maven.org/maven2",
+    ],
+)
+
+load("@v1_lock_file_format//:defs.bzl", v1_lock_file_format_pinned_maven_install = "pinned_maven_install")
+
+v1_lock_file_format_pinned_maven_install()
+
 http_file(
     name = "hamcrest_core_for_test",
     downloaded_file_path = "hamcrest-core-1.3.jar",
@@ -575,6 +636,16 @@ http_file(
     sha256 = "d2e015fca7130e79af2f4608dc54415e4b10b592d77333decb4b1a274c185050",
     urls = [
         "https://repo1.maven.org/maven2/org/junit/platform/junit-platform-commons/1.8.2/junit-platform-commons-1.8.2.jar",
+    ],
+)
+
+# https://github.com/bazelbuild/rules_jvm_external/issues/865
+http_file(
+    name = "google_api_services_compute_javadoc_for_test",
+    downloaded_file_path = "google-api-services-compute-v1-rev235-1.25.0-javadoc.jar",
+    sha256 = "b03be5ee8effba3bfbaae53891a9c01d70e2e3bd82ad8889d78e641b22bd76c2",
+    urls = [
+        "https://repo1.maven.org/maven2/com/google/apis/google-api-services-compute/v1-rev235-1.25.0/google-api-services-compute-v1-rev235-1.25.0-javadoc.jar",
     ],
 )
 

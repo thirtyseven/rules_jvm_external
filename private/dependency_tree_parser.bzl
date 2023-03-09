@@ -159,6 +159,7 @@ def _generate_imports(repository_ctx, dependencies, explicit_artifacts, neverlin
                 jar_versionless_target_labels.append(target_label)
             elif packaging == "aar":
                 import_rule = "aar_import"
+                jar_versionless_target_labels.append(target_label)
             else:
                 fail("Unsupported packaging type: " + packaging)
             jetify = jetify_all or (repository_ctx.attr.jetify and simple_coord in jetify_include_dict)
@@ -215,7 +216,7 @@ def _generate_imports(repository_ctx, dependencies, explicit_artifacts, neverlin
                 if get_packaging(dep) == "json":
                     continue
                 stripped_dep = strip_packaging_and_classifier_and_version(dep)
-                dep_target_label = escape(strip_packaging_and_classifier_and_version(dep))
+                dep_target_label = escape(stripped_dep)
 
                 # If we have matching artifacts with platform classifiers, skip adding this dependency.
                 # See https://github.com/bazelbuild/rules_jvm_external/issues/686
@@ -253,7 +254,10 @@ def _generate_imports(repository_ctx, dependencies, explicit_artifacts, neverlin
 
             target_import_string.append("\ttags = [")
             target_import_string.append("\t\t\"maven_coordinates=%s\"," % artifact["coordinates"])
-            target_import_string.append("\t\t\"maven_url=%s\"," % artifact["urls"][0])
+            if len(artifact["urls"]):
+                target_import_string.append("\t\t\"maven_url=%s\"," % artifact["urls"][0])
+            else:
+                target_import_string.append("\t\t\"maven_url=None\",")
             target_import_string.append("\t],")
 
             # 6. If `neverlink` is True in the artifact spec, add the neverlink attribute to make this artifact
@@ -310,12 +314,16 @@ def _generate_imports(repository_ctx, dependencies, explicit_artifacts, neverlin
             #   neverlink = True,
             #   testonly = True,
             #   visibility = ["//visibility:public"],
-            if repository_ctx.attr.strict_visibility and explicit_artifacts.get(simple_coord):
-                target_import_string.append("\tvisibility = [\"//visibility:public\"],")
-                alias_visibility = "\tvisibility = [\"//visibility:public\"],\n"
+            target_visibilities = []
+            if not repository_ctx.attr.strict_visibility or explicit_artifacts.get(simple_coord):
+                target_visibilities.append("//visibility:public")
+            elif repository_ctx.attr.generate_compat_repositories:
+                target_visibilities.append("@%s//:__subpackages__" % target_label)
             else:
-                target_import_string.append("\tvisibility = [%s]," % (",".join(["\"%s\"" % v for v in default_visibilities])))
-                alias_visibility = "\tvisibility = [%s],\n" % (",".join(["\"%s\"" % v for v in default_visibilities]))
+                target_visibilities.extend(repository_ctx.attr.strict_visibility_value)
+
+            target_import_string.append("\tvisibility = [%s]," % (",".join(["\"%s\"" % t for t in target_visibilities])))
+            alias_visibility = "\tvisibility = [%s],\n" % (",".join(["\"%s\"" % t for t in target_visibilities]))
 
             # 9. Finish the java_import rule.
             #
@@ -383,7 +391,7 @@ def _generate_imports(repository_ctx, dependencies, explicit_artifacts, neverlin
             target_import_string.append("\texports = [")
 
             target_import_labels = []
-            for dep in artifact.get("dependencies", []):
+            for dep in artifact.get("deps", []):
                 dep_target_label = escape(strip_packaging_and_classifier_and_version(dep))
 
                 # Coursier returns cyclic dependencies sometimes. Handle it here.

@@ -22,7 +22,6 @@ Table of Contents
       * [Advanced usage](#advanced-usage)
          * [Fetch source JARs](#fetch-source-jars)
          * [Checksum verification](#checksum-verification)
-         * [Using a persistent artifact cache](#using-a-persistent-artifact-cache)
          * [artifact helper macro](#artifact-helper-macro)
          * [Multiple maven_install declarations for isolated artifact version trees](#multiple-maven_install-declarations-for-isolated-artifact-version-trees)
          * [Detailed dependency information specifications](#detailed-dependency-information-specifications)
@@ -67,6 +66,11 @@ here](https://github.com/bazelbuild/rules_jvm_external/releases/latest).
 Support for Bazel versions before `4.0.0` is only available on rules_jvm_external releases `4.2` or earlier.
 
 ## Usage
+
+> New: on Bazel 6, you can use bzlmod instead of following directions below.
+> See [bzlmod](./docs/bzlmod.md).
+> Expect rough edges and incomplete support as bzlmod is still a new feature as of early 2023.
+> Note, bzlmod is expected to be on-by-default in Bazel 7.0.
 
 List the top-level Maven artifacts and servers in the WORKSPACE:
 
@@ -1123,6 +1127,24 @@ In order to run tests, your system must have an Android SDK installed. You can i
 ```
 $ bazel test //...
 ```
+
+#### Installing the Android SDK on macOS
+
+The instructions for installing the Android SDK on macOS can be hard
+to find, but if you're comfortable using [HomeBrew](https://brew.sh),
+the following steps will install what you need and set up the
+`ANDROID_HOME` environment variable that's required in order to run
+`rules_jvm_external`'s own tests.
+
+```
+brew install android-commandlinetools
+export ANDROID_HOME="$(brew --prefix)/share/android-commandlinetools"
+sdkmanager "build-tools;33.0.1" "cmdline-tools;latest" "ndk;25.1.8937393" "platform-tools" "platforms;android-33"
+```
+
+You can add the `export ANDROID_HOME` to your `.zshrc` or similar
+config file.
+
 
 ### Generating documentation
 
