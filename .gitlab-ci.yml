@@ -4,12 +4,11 @@ stages:
 publish_job:
   stage: publish_artifact
   variables:
-    ARTIFACTORY_BASE_URL: https://artifactory.push.tools.roku.com
+    ARTIFACTORY_BASE_URL: https://artifactory.push.tools.roku.com/artifactory
     REPO_NAME: genericrepo/ads/bazel/rules_jvm_external
     ARTIFACT_NAME: rules_jvm_external-$CI_COMMIT_SHA
   script:
-    - curl -fL https://install-cli.jfrog.io | sh
-    - jf config add --url=$ARTIFACTORY_BASE_URL --user=$ARTIFACTORY_USER --password=$ARTIFACTORY_PASSWORD
-    # - tar "rules_jvm_external-$CI_COMMIT_SHA.zip" .
     - git archive --prefix $ARTIFACT_NAME/  HEAD --format zip > "$ARTIFACT_NAME".zip
-    - jf rt u "$ARTIFACT_NAME".zip "$REPO_NAME"/"$ARTIFACT_NAME".zip --recursive=false
+    - curl -f -u "$ARTIFACTORY_USER:$ARTIFACTORY_PASSWORD" -X PUT "${ARTIFACTORY_BASE_URL}/${REPO_NAME}/${ARTIFACT_NAME}.zip" -T "${ARTIFACT_NAME}.zip"
+  tags:
+    - bazeldev

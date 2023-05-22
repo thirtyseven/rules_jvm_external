@@ -190,6 +190,9 @@ public class MavenPublisher {
     String[] extraArtifactsArr = extraArtifacts.split(",");
     for(int index=0;  index<extraClassifiersArr.length; ++index) {
       Path artifact = getPathIfSet(extraArtifactsArr[index]);
+      if (artifact == null) {
+        continue;
+      }
       String fileName = artifact.toString();
       String ext = fileName.substring(fileName.lastIndexOf("."));
       String base = String.format(
