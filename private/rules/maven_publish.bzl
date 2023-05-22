@@ -13,22 +13,22 @@ MavenPublishInfo = provider(
 _TEMPLATE = """#!/usr/bin/env bash
 
 echo "Uploading {coordinates} to {maven_repo}"
-{uploader} {maven_repo} {gpg_sign} {user} {password} {coordinates} {pom} {artifact} {source_jar} {javadoc} {extra_classifiers} {extra_artifacts}
+{uploader} '{maven_repo}' '{gpg_sign}' '{user}' '{password}' '{coordinates}' '{pom}' '{artifact}' '{source_jar}' '{javadoc}' '{extra_classifiers}' '{extra_artifacts}'
 """
 
 def _maven_publish_impl(ctx):
     executable = ctx.actions.declare_file("%s-publisher" % ctx.attr.name)
 
-    maven_repo = ctx.var.get("maven_repo", "''")
-    gpg_sign = ctx.var.get("gpg_sign", "'false'")
-    user = ctx.var.get("maven_user", "''")
-    password = ctx.var.get("maven_password", "''")
+    maven_repo = ctx.var.get("maven_repo", "")
+    gpg_sign = ctx.var.get("gpg_sign", "false")
+    user = ctx.var.get("maven_user", "")
+    password = ctx.var.get("maven_password", "")
 
     # Expand maven coordinates for any variables to be replaced.
     coordinates = ctx.expand_make_variables("coordinates", ctx.attr.coordinates, ctx.var)
-    artifacts_short_path = ctx.file.artifact.short_path if ctx.file.artifact else "''"
-    source_short_path = ctx.file.source_jar.short_path if ctx.file.source_jar else "''"
-    javadocs_short_path = ctx.file.javadocs.short_path if ctx.file.javadocs else "''"
+    artifacts_short_path = ctx.file.artifact.short_path if ctx.file.artifact else ""
+    source_short_path = ctx.file.source_jar.short_path if ctx.file.source_jar else ""
+    javadocs_short_path = ctx.file.javadocs.short_path if ctx.file.javadocs else ""
     extra_artifacts = [file.short_path for file in ctx.files.extra_artifacts]
 
     ctx.actions.write(
