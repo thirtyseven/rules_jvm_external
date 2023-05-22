@@ -41,7 +41,7 @@ def _maven_publish_impl(ctx):
             maven_repo = maven_repo,
             password = password,
             user = user,
-            pom = ctx.file.pom.short_path if ctx.file.pom else "''",
+            pom = ctx.file.pom.short_path if ctx.file.pom else "",
             artifact = artifacts_short_path,
             source_jar = source_short_path,
             javadoc = javadocs_short_path,
