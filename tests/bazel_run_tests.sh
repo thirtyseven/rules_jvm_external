@@ -38,6 +38,19 @@ function test_m2local_testing_found_local_artifact_through_pin() {
   expect_log "Successfully pinned resolved artifacts"
 }
 
+function test_unpinned_m2local_testing_found_local_artifact_through_pin() {
+  m2local_dir="~/.m2/repository"
+  mkdir -p ${m2local_dir}
+  # Publish a maven artifact locally - com.example.kt:1.0.0
+  bazel run --define maven_repo="file://${HOME}/.m2/repository" //tests/integration/kt_jvm_export:test.publish 
+  bazel run @unpinned_m2local_testing_repin//:pin >> "$TEST_LOG" 2>&1
+  rm -f m2local_testing_install.json
+  rm -rf ~/.m2/repository
+
+  expect_log "Assuming maven local for artifact: com.example:kt:1.0.0"
+  expect_log "Successfully pinned resolved artifacts"
+}
+
 function test_m2local_testing_found_local_artifact_through_build() {
   m2local_dir="${HOME}/.m2/repository"
   jar_dir="${m2local_dir}/com/example/kt/1.0.0"
@@ -111,6 +124,13 @@ function test_v1_lock_file_format() {
   bazel build @v1_lock_file_format//:io_ous_jtoml >> "$TEST_LOG" 2>&1
 }
 
+function test_dependency_pom_exclusion() {
+  bazel query --notool_deps 'deps(@regression_testing//:org_mockito_mockito_core)' >> "$TEST_LOG" 2>&1
+
+  # byte-buddy should be a dependency of "mockito-core" even though "androidx.arch.core:core-testing" has exclusion rule for it in POM
+  expect_log "@regression_testing//:net_bytebuddy_byte_buddy"
+}
+
 TESTS=(
   "test_dependency_aggregation"
   "test_duplicate_version_warning"
@@ -118,9 +138,11 @@ TESTS=(
   "test_outdated"
   "test_outdated_no_external_runfiles"
   "test_m2local_testing_found_local_artifact_through_pin"
+  "test_unpinned_m2local_testing_found_local_artifact_through_pin"
   "test_m2local_testing_found_local_artifact_through_build"
   "test_m2local_testing_found_local_artifact_after_build_copy"
   "test_v1_lock_file_format"
+  "test_dependency_pom_exclusion"
 )
 
 function run_tests() {

@@ -60,10 +60,17 @@ sh_binary(
     name = "pin",
     srcs = ["pin.sh"],
     args = [
-      "$(location :unsorted_deps.json)",
+        # TODO: change to rlocationpath once rules_jvm_external drops support for Bazel <5.4.0
+        # "$(rlocationpath :unsorted_deps.json)",
+        # We can use execpath in the meantime, because we know this file is always a source file
+        # in that external repo.
+        "$(execpath :unsorted_deps.json)",
     ],
     data = [
         ":unsorted_deps.json",
+    ],
+    deps = [
+        "@bazel_tools//tools/bash/runfiles",
     ],
     visibility = ["//visibility:public"],
 )
@@ -436,6 +443,7 @@ def _pinned_coursier_fetch_impl(repository_ctx):
         "load(\"@bazel_tools//tools/build_defs/repo:http.bzl\", \"http_file\")",
         "load(\"@bazel_tools//tools/build_defs/repo:utils.bzl\", \"maybe\")",
         "def pinned_maven_install():",
+        "    pass",  # Keep it syntactically correct in case of empty dependencies.
     ]
     maven_artifacts = []
     netrc_entries = importer.get_netrc_entries(maven_install_json_content)
@@ -658,8 +666,11 @@ def make_coursier_dep_tree(
     cmd.extend(artifact_coordinates)
     if version_conflict_policy == "pinned":
         for coord in artifact_coordinates:
-            # Undo any `,classifier=` suffix from `utils.artifact_coordinate`.
-            cmd.extend(["--force-version", coord.split(",classifier=")[0]])
+            # Undo any `,classifier=` and/or `,type=` suffix from `utils.artifact_coordinate`.
+            cmd.extend([
+                "--force-version",
+                ",".join([c for c in coord.split(",") if not c.startswith("classifier=") and not c.startswith("type=")]),
+            ])
     cmd.extend(["--artifact-type", ",".join(SUPPORTED_PACKAGING_TYPES + ["src", "doc"])])
     cmd.append("--verbose" if _is_verbose(repository_ctx) else "--quiet")
     cmd.append("--no-default")
@@ -1120,6 +1131,7 @@ def _coursier_fetch_impl(repository_ctx):
         "load(\"@bazel_tools//tools/build_defs/repo:http.bzl\", \"http_file\")",
         "load(\"@bazel_tools//tools/build_defs/repo:utils.bzl\", \"maybe\")",
         "def pinned_maven_install():",
+        "    pass",  # Ensure we're syntactically correct even if no deps are added
     ]
     repository_ctx.file(
         "defs.bzl",

@@ -25,8 +25,8 @@ def _maven_publish_impl(ctx):
     password = ctx.var.get("maven_password", "")
 
     # Expand maven coordinates for any variables to be replaced.
-    coordinates = ctx.expand_make_variables("coordinates", ctx.attr.coordinates, ctx.var)
-    artifacts_short_path = ctx.file.artifact.short_path if ctx.file.artifact else ""
+    coordinates = ctx.expand_make_variables("coordinates", ctx.attr.coordinates, {})
+    artifacts_short_path = ctx.file.artifact_jar.short_path if ctx.file.artifact_jar else ""
     source_short_path = ctx.file.source_jar.short_path if ctx.file.source_jar else ""
     javadocs_short_path = ctx.file.javadocs.short_path if ctx.file.javadocs else ""
     extra_artifacts = [file.short_path for file in ctx.files.extra_artifacts]
@@ -41,7 +41,7 @@ def _maven_publish_impl(ctx):
             maven_repo = maven_repo,
             password = password,
             user = user,
-            pom = ctx.file.pom.short_path if ctx.file.pom else "",
+            pom = ctx.file.pom.short_path,
             artifact = artifacts_short_path,
             source_jar = source_short_path,
             javadoc = javadocs_short_path,

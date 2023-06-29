@@ -253,6 +253,15 @@ maven_install(
             group = "com.google.apis",
             version = "v1-rev235-1.25.0",
         ),
+        # https://github.com/bazelbuild/rules_jvm_external/issues/907
+        # Any two platforms to ensure that it doesn't work _only_ under the host operating system
+        "com.google.protobuf:protoc:exe:linux-x86_64:3.21.12",
+        "com.google.protobuf:protoc:exe:osx-aarch_64:3.21.12",
+        # https://github.com/bazelbuild/rules_jvm_external/issues/917
+        # androidx core-testing POM has "exclusion" for "byte-buddy" but it should be downloaded as mockito-core
+        # dependency when the usually omitted "jar" packaging type is specified.
+        "org.mockito:mockito-core:jar:3.3.3",
+        "androidx.arch.core:core-testing:aar:2.1.0",
     ],
     generate_compat_repositories = True,
     maven_install_json = "//tests/custom_maven_install:regression_testing_install.json",
@@ -351,11 +360,11 @@ maven_install(
         # Must not be in any other maven_install where generate_compat_repositories = True
         "com.google.http-client:google-http-client-gson:1.42.3",
     ],
+    generate_compat_repositories = True,
     repositories = [
         "https://repo1.maven.org/maven2",
     ],
     strict_visibility = True,
-    generate_compat_repositories = True,
 )
 
 load("@strict_visibility_with_compat_testing//:compat.bzl", "compat_repositories")
@@ -572,6 +581,24 @@ maven_install(
 )
 
 maven_install(
+    name = "m2local_testing_repin",
+    artifacts = [
+        # this is a test jar built for integration
+        # tests in this repo
+        "com.example:kt:1.0.0",
+    ],
+    maven_install_json = "//tests/custom_maven_install:m2local_testing_with_pinned_file_install.json",
+    repositories = [
+        "m2Local",
+        "https://repo1.maven.org/maven2",
+    ],
+)
+
+load("@m2local_testing_repin//:defs.bzl", "pinned_maven_install")
+
+pinned_maven_install()
+
+maven_install(
     name = "m2local_testing_without_checksum",
     artifacts = [
         # this is a test jar built for integration
@@ -681,3 +708,31 @@ rbe_preconfig(
 load("//migration:maven_jar_migrator_deps.bzl", "maven_jar_migrator_repositories")
 
 maven_jar_migrator_repositories()
+
+# Located at the end, because it's only used in tests
+
+http_archive(
+    name = "com_google_protobuf",
+    sha256 = "6fc9b6efc18acb2fd5fb3bcf981572539c3432600042b662a162c1226b362426",
+    strip_prefix = "protobuf-21.10",
+    url = "https://github.com/protocolbuffers/protobuf/releases/download/v21.10/protobuf-all-21.10.tar.gz",
+)
+
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+
+protobuf_deps()
+
+maven_install(
+    name = "java_export_exclusion_testing",
+    artifacts = [
+        "com.google.protobuf:protobuf-java:3.23.1",
+    ],
+    maven_install_json = "@rules_jvm_external//tests/custom_maven_install:java_export_exclusion_testing_install.json",
+    repositories = [
+        "https://repo1.maven.org/maven2",
+    ],
+)
+
+load("@java_export_exclusion_testing//:defs.bzl", _java_export_exclusion_testing_pinned_maven_install = "pinned_maven_install")
+
+_java_export_exclusion_testing_pinned_maven_install()
