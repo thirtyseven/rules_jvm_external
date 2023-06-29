@@ -85,7 +85,7 @@ public class MavenPublisher {
     Coordinates coords = new Coordinates(parts.get(0), parts.get(1), parts.get(2));
 
     // Calculate md5 and sha1 for each of the inputs
-    Path pom = getPathIfSet(args[5]);
+    Path pom = Paths.get(args[5]);
     Path binJar = getPathIfSet(args[6]);
     Path srcJar = getPathIfSet(args[7]);
     Path docJar = getPathIfSet(args[8]);
@@ -94,9 +94,8 @@ public class MavenPublisher {
 
     try {
       List<CompletableFuture<Void>> futures = new ArrayList<>();
-      if(pom != null) {
-        futures.add(upload(repo, credentials, coords, ".pom", pom, gpgSign));
-      }
+      futures.add(upload(repo, credentials, coords, ".pom", pom, gpgSign));
+
       if (binJar != null) {
         String ext = binJar.toString().substring(binJar.toString().indexOf("."));
         futures.add(upload(repo, credentials, coords,  ext, binJar, gpgSign));

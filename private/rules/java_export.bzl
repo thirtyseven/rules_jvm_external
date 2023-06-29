@@ -180,14 +180,14 @@ def maven_export(
     )
 
     maven_publish(
-        extra_artifacts = extra_artifacts_targets,
-        extra_classifiers = extra_classifiers,
         name = "%s.publish" % name,
         coordinates = maven_coordinates,
         pom = "%s-pom" % name,
         javadocs = docs_jar,
         artifact = ":%s-maven-artifact" % name,
         source_jar = ":%s-maven-source" % name,
+        extra_artifacts = extra_artifacts_targets,
+        extra_classifiers = extra_classifiers,
         visibility = visibility,
         tags = tags,
         testonly = testonly,

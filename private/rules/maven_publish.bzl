@@ -99,6 +99,7 @@ When signing with GPG, the current default key is used.
             mandatory = True,
         ),
         "pom": attr.label(
+            mandatory = True,
             allow_single_file = True,
         ),
         "javadocs": attr.label(
