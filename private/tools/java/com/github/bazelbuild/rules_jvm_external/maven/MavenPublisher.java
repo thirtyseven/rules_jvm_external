@@ -120,7 +120,7 @@ public class MavenPublisher {
       }
 
       CompletableFuture<Void> all =
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+          CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
       all.get(30, MINUTES);
     } finally {
       EXECUTOR.shutdown();
@@ -180,37 +180,6 @@ public class MavenPublisher {
       uploads.add(upload(String.format("%s%s.sha1.asc", base, append), credentials, sign(sha1)));
     }
 
-    return CompletableFuture.allOf(uploads.toArray(new CompletableFuture<?>[0]));
-  }
-
-  private static CompletableFuture<Void> uploadExtraArtifacts(
-      String repo,
-      Credentials credentials,
-      Coordinates coords,
-      String extraClassifiers,
-      String extraArtifacts
-    ){
-    List<CompletableFuture<?>> uploads = new ArrayList<>();
-    String[] extraClassifiersArr = extraClassifiers.split(",");
-    String[] extraArtifactsArr = extraArtifacts.split(",");
-    for(int index=0;  index<extraClassifiersArr.length; ++index) {
-      Path artifact = getPathIfSet(extraArtifactsArr[index]);
-      if (artifact == null) {
-        continue;
-      }
-      String fileName = artifact.toString();
-      String ext = fileName.substring(fileName.lastIndexOf("."));
-      String base = String.format(
-          "%s/%s/%s/%s/%s-%s",
-          repo.replaceAll("/$", ""),
-          coords.groupId.replace('.', '/'),
-          coords.artifactId,
-          coords.version,
-          coords.artifactId,
-          coords.version);
-
-      uploads.add(upload(String.format("%s-%s%s", base, extraClassifiersArr[index], ext), credentials, artifact));
-    }
     return CompletableFuture.allOf(uploads.toArray(new CompletableFuture<?>[0]));
   }
 
