@@ -25,6 +25,7 @@ def _maven_bom_impl(ctx):
 
     # Expand maven coordinates for any variables to be replaced.
     coordinates = ctx.expand_make_variables("coordinates", ctx.attr.maven_coordinates, {})
+
     bom = generate_pom(
         ctx,
         coordinates = coordinates,

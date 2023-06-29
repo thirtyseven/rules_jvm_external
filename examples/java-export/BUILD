@@ -9,10 +9,10 @@ load("@rules_jvm_external//:defs.bzl", "java_export", "maven_bom", "maven_publis
 
 java_export(
     name = "example-export",
-    extra_artifacts = {
+    classifier_artifacts = {
         "release": "//src/main/java/com/github/bazelbuild/rulesjvmexternal/example/export:tar",
     },
-    maven_coordinates = "com.example:bazel-example:$(version)",
+    maven_coordinates = "com.example:bazel-example:0.0.1",
     runtime_deps = [
         "//src/main/java/com/github/bazelbuild/rulesjvmexternal/example/export",
     ],

@@ -87,35 +87,25 @@ public class MavenPublisher {
 
     // Calculate md5 and sha1 for each of the inputs
     Path pom = Paths.get(args[5]);
-    Path binJar = getPathIfSet(args[6]);
-    Path srcJar = getPathIfSet(args[7]);
-    Path docJar = getPathIfSet(args[8]);
+    Path mainArtifact = getPathIfSet(args[6]);
 
     try {
       List<CompletableFuture<Void>> futures = new ArrayList<>();
       futures.add(upload(repo, credentials, coords, ".pom", pom, gpgSign));
 
-      if (binJar != null) {
-        String ext = com.google.common.io.Files.getFileExtension(binJar.getFileName().toString());
-        futures.add(upload(repo, credentials, coords, "." + ext, binJar, gpgSign));
+      if (mainArtifact != null) {
+        String ext = com.google.common.io.Files.getFileExtension(mainArtifact.getFileName().toString());
+        futures.add(upload(repo, credentials, coords, "." + ext, mainArtifact, gpgSign));
       }
 
-      if (srcJar != null) {
-        futures.add(upload(repo, credentials, coords, "-sources.jar", srcJar, gpgSign));
-      }
-
-      if (docJar != null) {
-        futures.add(upload(repo, credentials, coords, "-javadoc.jar", docJar, gpgSign));
-      }
-
-      if(args.length > 9) {
-        List<String> extraArtifactTuples = Splitter.onPattern(",").splitToList(args[9]);
+      if(args.length > 7) {
+        List<String> extraArtifactTuples = Splitter.onPattern(",").splitToList(args[7]);
         for(String artifactTuple : extraArtifactTuples) {
           String[] splits = artifactTuple.split("=");
           String classifier = splits[0];
           Path artifact = Paths.get(splits[1]);
           String ext = com.google.common.io.Files.getFileExtension(splits[1]);
-          futures.add(upload(repo, credentials, coords, String.format("-%s.%s", classifier,ext), artifact, gpgSign));
+          futures.add(upload(repo, credentials, coords, String.format("-%s.%s", classifier, ext), artifact, gpgSign));
         }
       }
 

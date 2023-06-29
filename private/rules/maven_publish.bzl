@@ -5,14 +5,14 @@ MavenPublishInfo = provider(
         "javadocs": "Javadoc jar file for documentation files",
         "artifact": "Primary artifact to be published, typically a jar",
         "source_jar": "Jar with the source code for review",
-        "extra_artifacts": "List of extra artifacts to be published under classifiers",
+        "classifier_artifacts": "Dict of extra artifacts to be published under classifiers",
     },
 )
 
 _TEMPLATE = """#!/usr/bin/env bash
 
 echo "Uploading {coordinates} to {maven_repo}"
-{uploader} '{maven_repo}' '{gpg_sign}' '{user}' '{password}' '{coordinates}' '{pom}' '{artifact}' '{source_jar}' '{javadoc}' '{extra_artifacts}'
+{uploader} '{maven_repo}' '{gpg_sign}' '{user}' '{password}' '{coordinates}' '{pom}' '{artifact}' '{classifier_artifacts}'
 """
 
 def _maven_publish_impl(ctx):
@@ -26,15 +26,11 @@ def _maven_publish_impl(ctx):
     # Expand maven coordinates for any variables to be replaced.
     coordinates = ctx.expand_make_variables("coordinates", ctx.attr.coordinates, {})
     artifacts_short_path = ctx.file.artifact.short_path if ctx.file.artifact else ""
-    source_short_path = ctx.file.source_jar.short_path if ctx.file.source_jar else ""
-    javadocs_short_path = ctx.file.javadocs.short_path if ctx.file.javadocs else ""
 
-    extra_artifact_files = []
-    extra_artifact_pairs = []
-    for target, classifier in ctx.attr.extra_artifacts.items():
+    classifier_artifacts_dict = {}
+    for target, classifier in ctx.attr.classifier_artifacts.items():
         file = target.files.to_list()[0]
-        extra_artifact_files.append(file)
-        extra_artifact_pairs.append("{}={}".format(classifier, file.short_path))
+        classifier_artifacts_dict[classifier] = file
 
     ctx.actions.write(
         output = executable,
@@ -48,21 +44,13 @@ def _maven_publish_impl(ctx):
             user = user,
             pom = ctx.file.pom.short_path,
             artifact = artifacts_short_path,
-            source_jar = source_short_path,
-            javadoc = javadocs_short_path,
-            extra_artifacts = ",".join(extra_artifact_pairs),
+            classifier_artifacts = ",".join(["{}={}".format(classifier, file.short_path) for (classifier, file) in classifier_artifacts_dict.items()]),
         ),
     )
 
-    files = [] + ctx.files.extra_artifacts
-    if ctx.file.pom:
-        files.append(ctx.file.pom)
+    files = [ctx.file.pom] + ctx.files.classifier_artifacts
     if ctx.file.artifact:
         files.append(ctx.file.artifact)
-    if ctx.file.source_jar:
-        files.append(ctx.file.source_jar)
-    if ctx.file.javadocs:
-        files.append(ctx.file.javadocs)
 
     return [
         DefaultInfo(
@@ -76,9 +64,9 @@ def _maven_publish_impl(ctx):
         MavenPublishInfo(
             coordinates = coordinates,
             artifact = ctx.file.artifact,
-            extra_artifacts = extra_artifact_files,
-            javadocs = ctx.file.javadocs,
-            source_jar = ctx.file.source_jar,
+            classifier_artifacts = classifier_artifacts_dict,
+            javadocs = classifier_artifacts_dict.get("javadoc"),
+            source_jar = classifier_artifacts_dict.get("sources"),
             pom = ctx.file.pom,
         ),
     ]
@@ -107,16 +95,10 @@ When signing with GPG, the current default key is used.
             mandatory = True,
             allow_single_file = True,
         ),
-        "javadocs": attr.label(
-            allow_single_file = True,
-        ),
         "artifact": attr.label(
             allow_single_file = True,
         ),
-        "source_jar": attr.label(
-            allow_single_file = True,
-        ),
-        "extra_artifacts": attr.label_keyed_string_dict(allow_files = True),
+        "classifier_artifacts": attr.label_keyed_string_dict(allow_files = True),
         "_uploader": attr.label(
             executable = True,
             cfg = "exec",
