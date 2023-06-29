@@ -67,7 +67,7 @@ def java_export(
         that should not be included in the maven jar to a `Label` pointing to the dependency
         that workspace should be replaced by, or `None` if the exclusion shouldn't be replaced
         with an extra dependency.
-      extra_artifacts: A dict of classifier -> artifact of extra artifacts to publish to Maven.
+      extra_artifacts: A dict of classifier -> artifact of additional artifacts to publish to Maven.
       visibility: The visibility of the target
       kwargs: These are passed to [`java_library`](https://bazel.build/reference/be/java#java_library),
         and so may contain any valid parameter for that rule.

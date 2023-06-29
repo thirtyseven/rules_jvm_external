@@ -18,12 +18,6 @@ java_export(
     ],
 )
 
-maven_publish(
-    name = "artifact-publish",
-    artifact = "//src/main/java/com/github/bazelbuild/rulesjvmexternal/example/export:tar",
-    coordinates = "com.example:artifact-example:$(version)",
-)
-
 maven_bom(
     name = "bom",
     dependencies_maven_coordinates = "com.example:bazel-example-dependencies:0.0.1",
