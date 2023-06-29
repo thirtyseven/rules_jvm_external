@@ -3,17 +3,16 @@ MavenPublishInfo = provider(
         "coordinates": "Maven coordinates for the project, which may be None",
         "pom": "Pom.xml file for metdata",
         "javadocs": "Javadoc jar file for documentation files",
-        "artifact": "Jar with the code or generic artifact like .war and metadata for execution",
+        "artifact": "Primary artifact to be published, typically a jar",
         "source_jar": "Jar with the source code for review",
-        "extra_classifiers": "Extra classifiers for Artifacts",
-        "extra_artifacts": "Extra artifacts such as tars, wars",
+        "extra_artifacts": "List of extra artifacts to be published under classifiers",
     },
 )
 
 _TEMPLATE = """#!/usr/bin/env bash
 
 echo "Uploading {coordinates} to {maven_repo}"
-{uploader} '{maven_repo}' '{gpg_sign}' '{user}' '{password}' '{coordinates}' '{pom}' '{artifact}' '{source_jar}' '{javadoc}' '{extra_classifiers}' '{extra_artifacts}'
+{uploader} '{maven_repo}' '{gpg_sign}' '{user}' '{password}' '{coordinates}' '{pom}' '{artifact}' '{source_jar}' '{javadoc}' '{extra_artifacts}'
 """
 
 def _maven_publish_impl(ctx):
@@ -26,10 +25,16 @@ def _maven_publish_impl(ctx):
 
     # Expand maven coordinates for any variables to be replaced.
     coordinates = ctx.expand_make_variables("coordinates", ctx.attr.coordinates, {})
-    artifacts_short_path = ctx.file.artifact_jar.short_path if ctx.file.artifact_jar else ""
+    artifacts_short_path = ctx.file.artifact.short_path if ctx.file.artifact else ""
     source_short_path = ctx.file.source_jar.short_path if ctx.file.source_jar else ""
     javadocs_short_path = ctx.file.javadocs.short_path if ctx.file.javadocs else ""
-    extra_artifacts = [file.short_path for file in ctx.files.extra_artifacts]
+
+    extra_artifact_files = []
+    extra_artifact_pairs = []
+    for target, classifier in ctx.attr.extra_artifacts.items():
+        file = target.files.to_list()[0]
+        extra_artifact_files.append(file)
+        extra_artifact_pairs.append("{}={}".format(classifier, file.short_path))
 
     ctx.actions.write(
         output = executable,
@@ -45,8 +50,7 @@ def _maven_publish_impl(ctx):
             artifact = artifacts_short_path,
             source_jar = source_short_path,
             javadoc = javadocs_short_path,
-            extra_classifiers = ",".join(ctx.attr.extra_classifiers),
-            extra_artifacts = ",".join(extra_artifacts),
+            extra_artifacts = ",".join(extra_artifact_pairs),
         ),
     )
 
@@ -72,6 +76,7 @@ def _maven_publish_impl(ctx):
         MavenPublishInfo(
             coordinates = coordinates,
             artifact = ctx.file.artifact,
+            extra_artifacts = extra_artifact_files,
             javadocs = ctx.file.javadocs,
             source_jar = ctx.file.source_jar,
             pom = ctx.file.pom,
@@ -111,8 +116,7 @@ When signing with GPG, the current default key is used.
         "source_jar": attr.label(
             allow_single_file = True,
         ),
-        "extra_classifiers": attr.string_list(),
-        "extra_artifacts": attr.label_list(),
+        "extra_artifacts": attr.label_keyed_string_dict(allow_files = True),
         "_uploader": attr.label(
             executable = True,
             cfg = "exec",

@@ -93,12 +93,12 @@ def java_export(
         lib_name,
         deploy_env,
         excluded_workspaces,
-        extra_artifacts,
         pom_template,
         visibility,
         tags,
         testonly,
         javadocopts,
+        extra_artifacts = extra_artifacts,
     )
 
 def maven_export(
@@ -229,9 +229,6 @@ def maven_export(
             testonly = testonly,
         )
 
-    extra_artifacts_targets = extra_artifacts.values()
-    extra_classifiers = extra_artifacts.keys()
-
     pom_file(
         name = "%s-pom" % name,
         target = ":%s" % lib_name,
@@ -249,8 +246,7 @@ def maven_export(
         javadocs = docs_jar,
         artifact = ":%s-maven-artifact" % name,
         source_jar = ":%s-maven-source" % name,
-        extra_artifacts = extra_artifacts_targets,
-        extra_classifiers = extra_classifiers,
+        extra_artifacts = {v: k for (k, v) in extra_artifacts.items()},
         visibility = visibility,
         tags = tags,
         testonly = testonly,
