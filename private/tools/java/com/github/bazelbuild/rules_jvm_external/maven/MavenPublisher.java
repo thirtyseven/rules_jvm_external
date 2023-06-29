@@ -28,6 +28,7 @@ import com.google.cloud.WriteChannel;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
+import com.google.common.base.Splitter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -89,16 +90,14 @@ public class MavenPublisher {
     Path binJar = getPathIfSet(args[6]);
     Path srcJar = getPathIfSet(args[7]);
     Path docJar = getPathIfSet(args[8]);
-    String extraClassifiers = args.length > 9 ? args[9] : null;
-    String extraArtifacts = args.length > 10 ? args[10] : null;
 
     try {
       List<CompletableFuture<Void>> futures = new ArrayList<>();
       futures.add(upload(repo, credentials, coords, ".pom", pom, gpgSign));
 
       if (binJar != null) {
-        String ext = binJar.toString().substring(binJar.toString().indexOf("."));
-        futures.add(upload(repo, credentials, coords,  ext, binJar, gpgSign));
+        String ext = com.google.common.io.Files.getFileExtension(binJar.getFileName().toString());
+        futures.add(upload(repo, credentials, coords, "." + ext, binJar, gpgSign));
       }
 
       if (srcJar != null) {
@@ -109,12 +108,19 @@ public class MavenPublisher {
         futures.add(upload(repo, credentials, coords, "-javadoc.jar", docJar, gpgSign));
       }
 
-      if(extraClassifiers != null && extraArtifacts != null) {
-        LOG.info(String.format("extraClassifiers: %s, extraArtifacts: %s", extraClassifiers, extraArtifacts));
-        futures.add(uploadExtraArtifacts(repo, credentials, coords, extraClassifiers, extraArtifacts));
+      if(args.length > 9) {
+        List<String> extraArtifactTuples = Splitter.onPattern(",").splitToList(args[9]);
+        for(String artifactTuple : extraArtifactTuples) {
+          String[] splits = artifactTuple.split("=");
+          String classifier = splits[0];
+          Path artifact = Paths.get(splits[1]);
+          String ext = com.google.common.io.Files.getFileExtension(splits[1]);
+          futures.add(upload(repo, credentials, coords, String.format("-%s.%s", classifier,ext), artifact, gpgSign));
+        }
       }
 
-      CompletableFuture<Void> all = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+      CompletableFuture<Void> all =
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
       all.get(30, MINUTES);
     } finally {
       EXECUTOR.shutdown();
