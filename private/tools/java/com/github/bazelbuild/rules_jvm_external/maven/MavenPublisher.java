@@ -320,7 +320,7 @@ public class MavenPublisher {
       Path item,
       SigningMetadata signingMetadata,
       Executor executor)
-      throws IOException, InterruptedException {
+      throws IOException {
 
     String base =
         String.format(
@@ -334,23 +334,6 @@ public class MavenPublisher {
 
     byte[] toHash = Files.readAllBytes(item);
 
-    // For SNAPSHOT versions, skip uploading separate checksum files
-    // Artifactory renames SNAPSHOT files with timestamps, causing checksum uploads to fail
-    // Most Maven repositories (Artifactory, Nexus, etc.) automatically calculate checksums
-    boolean isSnapshot = coords.version.contains("SNAPSHOT");
-
-    Path md5 = Files.createTempFile(item.getFileName().toString(), ".md5");
-    Files.write(md5, toMd5(toHash).getBytes(UTF_8));
-
-    Path sha1 = Files.createTempFile(item.getFileName().toString(), ".sha1");
-    Files.write(sha1, toSha1(toHash).getBytes(UTF_8));
-
-    Path sha256 = Files.createTempFile(item.getFileName().toString(), ".sha256");
-    Files.write(sha256, toSha256(toHash).getBytes(UTF_8));
-
-    Path sha512 = Files.createTempFile(item.getFileName().toString(), ".sha512");
-    Files.write(sha512, toSha512(toHash).getBytes(UTF_8));
-
     // Upload primary file first, then upload hash files after it completes
     // This is required for Artifactory which rejects hash files uploaded before the primary file
     CompletableFuture<Void> primaryUpload = upload(String.format("%s%s", base, append), credentials, item, executor);
@@ -359,7 +342,23 @@ public class MavenPublisher {
       try {
         List<CompletableFuture<?>> hashUploads = new ArrayList<>();
 
+        // For SNAPSHOT versions, skip uploading separate checksum files
+        // Artifactory renames SNAPSHOT files with timestamps, causing checksum uploads to fail
+        // Most Maven repositories (Artifactory, Nexus, etc.) automatically calculate checksums
+        boolean isSnapshot = coords.version.contains("SNAPSHOT");
         if (!isSnapshot) {
+          Path md5 = Files.createTempFile(item.getFileName().toString(), ".md5");
+          Files.write(md5, toMd5(toHash).getBytes(UTF_8));
+
+          Path sha1 = Files.createTempFile(item.getFileName().toString(), ".sha1");
+          Files.write(sha1, toSha1(toHash).getBytes(UTF_8));
+
+          Path sha256 = Files.createTempFile(item.getFileName().toString(), ".sha256");
+          Files.write(sha256, toSha256(toHash).getBytes(UTF_8));
+
+          Path sha512 = Files.createTempFile(item.getFileName().toString(), ".sha512");
+          Files.write(sha512, toSha512(toHash).getBytes(UTF_8));
+
           hashUploads.add(upload(String.format("%s%s.md5", base, append), credentials, md5, executor));
           hashUploads.add(upload(String.format("%s%s.sha1", base, append), credentials, sha1, executor));
           hashUploads.add(upload(String.format("%s%s.sha256", base, append), credentials, sha256, executor));
